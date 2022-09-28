@@ -153,6 +153,39 @@ def derivative_b_errors_func_ration(x: list, y: list, a: float, b: float) -> np.
     return -2 * np.sum((a * np.array(x) * (a / (1 + b * np.array(x)) - np.array(y))) / (1 + b * np.array(x)) ** 2)
 
 
+def generating_line(func: Callable, x: list, y: list) -> tuple:
+    """
+    Function of enumeration to find minimum of input function
+
+    :param func: input function
+    :param x: list of elements
+    :param y: list of results
+    :type: Callable
+    :type x: list
+    :type y: list
+    :return: the best a and b coefficients
+    :rtype: tuple
+    """
+
+    a = np.linspace(-2, 2, 1000)
+    b = np.linspace(-2, 2, 1000)
+
+    min_error = np.inf
+    best_a = np.inf
+    best_b = np.inf
+
+    for a_i in a:
+        for b_j in b:
+            current_error = func(x, y, a_i, b_j)
+
+            if current_error < min_error:
+                min_error = current_error
+                best_a = a_i
+                best_b = b_j
+
+    return best_a, best_b
+
+
 def gradient_descent(func: Callable, der_a: Callable, der_b: Callable, x: list, y: list,
                      epsilon: float = 0.001, max_iter: int = 5000) -> tuple:
     """
@@ -282,7 +315,7 @@ def levenberg_marquardt(func: Callable) -> tuple:
     return res['x'][0], res['x'][1]
 
 
-def find_min_lambda(func: Callable, approx: list, gradient: list, x: list, y: list) -> float:
+def find_min_lambda(func: Callable, approx: list, gradient: np.array, x: list, y: list) -> float:
     """
     Function to find the best lambda coefficient for input function by Nelder-Mead's method
     of one-dimension minimization
@@ -294,7 +327,7 @@ def find_min_lambda(func: Callable, approx: list, gradient: list, x: list, y: li
     :param y: list of results
     :type func: Callable
     :type approx: list
-    :type gradient: list
+    :type gradient: np.array
     :type x: list
     :type y: list
     :return: best lambda
@@ -438,35 +471,140 @@ def errors_func_ration_lev_marq_der(params: list):
     return der
 
 
-# Plot for approximation by linear function
+# Plot for approximation by linear function and print results
 plt.plot(x_list, y_list)
-plt.plot(x_list, lin_func(x_list, *gradient_descent(errors_func_lin, derivative_a_errors_func_lin,
-                                                    derivative_b_errors_func_lin,
-                                                    x_list, y_list)), label="gradient descent linear",
+
+gen_line_lin = generating_line(errors_func_lin, x_list, y_list)
+plt.plot(x_list, lin_func(x_list, *gen_line_lin), label="generating line linear",
+         color='pink')
+
+print("GENERATING LINE LINEAR")
+print("Best A:", gen_line_lin[0])
+print("Best B:", gen_line_lin[1])
+print()
+print("Best score", errors_func_lin(x_list, y_list, gen_line_lin[0], gen_line_lin[1]))
+print()
+
+grad_desc_lin = gradient_descent(errors_func_lin, derivative_a_errors_func_lin,
+                             derivative_b_errors_func_lin,
+                             x_list, y_list)
+plt.plot(x_list, lin_func(x_list, *grad_desc_lin), label="gradient descent linear",
          color='orange')
-plt.plot(x_list, lin_func(x_list, *conjugate_gradient_descent(errors_func_lin, derivative_a_errors_func_lin,
-                                                              derivative_b_errors_func_lin, x_list, y_list)),
+
+print("GRADIENT DESCENT LINEAR")
+print("A:", grad_desc_lin[0])
+print("B:", grad_desc_lin[1])
+print()
+print("Minimum function:", errors_func_lin(x_list, y_list, grad_desc_lin[0], grad_desc_lin[1]))
+print("Best score:", errors_func_lin(x_list, y_list, gen_line_lin[0], gen_line_lin[1]))
+print()
+
+conj_grad_desc_lin = conjugate_gradient_descent(errors_func_lin, derivative_a_errors_func_lin,
+                                            derivative_b_errors_func_lin, x_list, y_list)
+plt.plot(x_list, lin_func(x_list, *conj_grad_desc_lin),
          label="conjugate gradient descent linear", color='red')
-plt.plot(x_list, lin_func(x_list, *newton(errors_func_lin_lev_marq_newton, errors_func_lin_lev_marq_der)),
+
+print("CONJUGATE GRADIENT DESCENT LINEAR")
+print("A:", conj_grad_desc_lin[0])
+print("B:", conj_grad_desc_lin[1])
+print()
+print("Minimum function:", errors_func_lin(x_list, y_list, conj_grad_desc_lin[0], conj_grad_desc_lin[1]))
+print("Best score:", errors_func_lin(x_list, y_list, gen_line_lin[0], gen_line_lin[1]))
+print()
+
+newt_lin = newton(errors_func_lin_lev_marq_newton, errors_func_lin_lev_marq_der)
+plt.plot(x_list,
+         lin_func(x_list, *newt_lin),
          label="newton linear", color='green')
-plt.plot(x_list, lin_func(x_list, *levenberg_marquardt(errors_func_lin_lev_marq)),
+
+print("NEWTON LINEAR")
+print("A:", newt_lin[0])
+print("B:", newt_lin[1])
+print()
+print("Minimum function:", errors_func_lin(x_list, y_list, newt_lin[0], newt_lin[1]))
+print("Best score:", errors_func_lin(x_list, y_list, gen_line_lin[0], gen_line_lin[1]))
+print()
+
+lev_marq_lin = levenberg_marquardt(errors_func_lin_lev_marq)
+plt.plot(x_list, lin_func(x_list, *lev_marq_lin),
          label="levenberg marquardt linear", color='purple')
+
+print("LEVENBERG MARQUARDT LINEAR")
+print("A:", lev_marq_lin[0])
+print("B:", lev_marq_lin[1])
+print()
+print("Minimum function:", errors_func_lin(x_list, y_list, lev_marq_lin[0], lev_marq_lin[1]))
+print("Best score:", errors_func_lin(x_list, y_list, gen_line_lin[0], gen_line_lin[1]))
+print()
+
 plt.legend()
 plt.show()
 
 # Plot for approximation by rational function
 plt.plot(x_list, y_list)
-plt.plot(x_list, ration_func(x_list, *gradient_descent(errors_func_ration, derivative_a_errors_func_ration,
+
+gen_line_ration = generating_line(errors_func_ration, x_list, y_list)
+plt.plot(x_list, ration_func(x_list, *gen_line_ration),
+         label="generating line ration",
+         color='pink')
+
+print("GENERATING LINE RATIONAL")
+print("Best A:", gen_line_ration[0])
+print("Best B:", gen_line_ration[1])
+print()
+print("Best score", errors_func_ration(x_list, y_list, gen_line_ration[0], gen_line_ration[1]))
+print()
+
+grad_desc_ration = gradient_descent(errors_func_ration, derivative_a_errors_func_ration,
                                                        derivative_b_errors_func_ration,
-                                                       x_list, y_list)), label="gradient descent ration",
+                                                       x_list, y_list)
+plt.plot(x_list, ration_func(x_list, *grad_desc_ration), label="gradient descent ration",
          color='orange')
-plt.plot(x_list, ration_func(x_list, *conjugate_gradient_descent(errors_func_ration, derivative_a_errors_func_ration,
-                                                                 derivative_b_errors_func_ration, x_list, y_list)),
+
+print("GRADIENT DESCENT RATIONAL")
+print("A:", grad_desc_ration[0])
+print("B:", grad_desc_ration[1])
+print()
+print("Minimum function:", errors_func_ration(x_list, y_list, grad_desc_ration[0], grad_desc_ration[1]))
+print("Best score:", errors_func_ration(x_list, y_list, gen_line_ration[0], gen_line_ration[1]))
+print()
+
+conj_grad_desc_ration = conjugate_gradient_descent(errors_func_ration, derivative_a_errors_func_ration,
+                                                                 derivative_b_errors_func_ration, x_list, y_list)
+plt.plot(x_list, ration_func(x_list, *conj_grad_desc_ration),
          label="conjugate gradient descent ration", color='red')
-plt.plot(x_list, ration_func(x_list, *newton(errors_func_ration_lev_marq_newton, errors_func_ration_lev_marq_der)),
+
+print("CONJUGATED GRADIENT DESCENT RATIONAL")
+print("A:", conj_grad_desc_ration[0])
+print("B:", conj_grad_desc_ration[1])
+print()
+print("Minimum function:", errors_func_ration(x_list, y_list, conj_grad_desc_ration[0], conj_grad_desc_ration[1]))
+print("Best score:", errors_func_ration(x_list, y_list, gen_line_ration[0], gen_line_ration[1]))
+print()
+
+newt_ration = newton(errors_func_ration_lev_marq_newton, errors_func_ration_lev_marq_der)
+plt.plot(x_list, ration_func(x_list, *newt_ration),
          label="newton ration", color='green')
-plt.plot(x_list, ration_func(x_list, *levenberg_marquardt(errors_func_ration_lev_marq)),
+
+print("NEWTON RATIONAL")
+print("A:", newt_ration[0])
+print("B:", newt_ration[1])
+print()
+print("Minimum function:", errors_func_ration(x_list, y_list, newt_ration[0], newt_ration[1]))
+print("Best score:", errors_func_ration(x_list, y_list, gen_line_ration[0], gen_line_ration[1]))
+print()
+
+lev_marq_ration = levenberg_marquardt(errors_func_ration_lev_marq)
+plt.plot(x_list, ration_func(x_list, *lev_marq_ration),
          label="levenberg marquardt ration", color='purple')
+
+print("LEVENBERG MARQUARDT RATIONAL")
+print("A:", lev_marq_ration[0])
+print("B:", lev_marq_ration[1])
+print()
+print("Minimum function:", errors_func_ration(x_list, y_list, lev_marq_ration[0], lev_marq_ration[1]))
+print("Best score:", errors_func_ration(x_list, y_list, gen_line_ration[0], gen_line_ration[1]))
+print()
 
 plt.legend()
 plt.show()
